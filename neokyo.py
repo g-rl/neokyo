@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from colorama import Fore, Style, init
 from urllib.parse import urlparse
 from deep_translator import GoogleTranslator
+from csv_util import export_clean_excel
 
 init(autoreset=True)
 
@@ -209,11 +210,18 @@ def display_data(item, currency, config):
         converted = round(yen * rate, config["conversion"]["precision"])
         sym = CURRENCY_SYMBOLS.get(currency, "")
         space = " " if config["conversion"]["symbol_spacing"] else ""
+        converted_str = f"{sym}{space}{converted}"
+
+        # ✅ Add these two lines so converted price gets saved later:
+        item["converted_price"] = converted
+        item["converted_currency"] = currency
+
         if config["conversion"]["show_both_prices"]:
-            print(f"{Fore.WHITE}price: {Fore.MAGENTA}{yen}¥ ({sym}{space}{converted})")
+            print(f"{Fore.WHITE}price: {Fore.MAGENTA}{yen}¥ ({converted_str})")
         else:
-            print(f"{Fore.WHITE}price: {Fore.MAGENTA}{sym}{space}{converted}")
+            print(f"{Fore.WHITE}price: {Fore.MAGENTA}{converted_str}")
     print()
+
 
 def safe_name(name):
     return "".join(c for c in name if c.isalnum() or c in (" ", "_")).strip().replace(" ", "_")
@@ -264,24 +272,33 @@ def save_product_files(item, url, currency, config):
         csv_path = os.path.join(base_dir, config["files"]["csv_name"])
         csv_exists = os.path.exists(csv_path)
         with open(csv_path, mode="a", newline="", encoding="utf-8") as csvfile:
-            fieldnames = ["title", "title_original", "seller", "item_id", "condition", "shipping", "price_yen", "image_url", "url"]
+            fieldnames = [
+                "title", "title_original", "seller", "item_id", "condition", "shipping",
+                "price_yen", "converted_price", "converted_currency", "image_url", "url"
+            ]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             if not csv_exists:
                 writer.writeheader()
             writer.writerow({**item, "url": url})
         print(Fore.GREEN + f"appended product to: {csv_path}")
 
-    # open folder
-    if config["output"]["open_folder"]:
         try:
-            if platform.system() == "Windows":
-                os.startfile(folder_path)
-            elif platform.system() == "Darwin":
-                subprocess.run(["open", folder_path])
-            else:
-                subprocess.run(["xdg-open", folder_path])
+            export_clean_excel(csv_path, "formatted_output.xlsx")
+            print(Fore.CYAN + "created clean excel export: formatted_output.xlsx")
         except Exception as e:
-            print(Fore.YELLOW + f"could not open folder automatically: {e}")
+            print(Fore.YELLOW + f"could not create clean excel file: {e}")
+
+        # open folder
+        if config["output"]["open_folder"]:
+            try:
+                if platform.system() == "Windows":
+                    os.startfile(folder_path)
+                elif platform.system() == "Darwin":
+                    subprocess.run(["open", folder_path])
+                else:
+                    subprocess.run(["xdg-open", folder_path])
+            except Exception as e:
+                print(Fore.YELLOW + f"could not open folder automatically: {e}")
 
 def main():
     print(Fore.MAGENTA + Style.BRIGHT + "\nneokyo product checker - github.com/g-rl\n")
