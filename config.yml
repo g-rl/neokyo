@@ -7,7 +7,7 @@ retry_attempts: 3                  # how many times to retry a request if it fai
 timeout_seconds: 10                # HTTP timeout for requests
 
 output:
-  open_folder: true
+  open_folder: false
   save_images: true
   save_csv: true
   save_txt: true                   # save item_data.txt file

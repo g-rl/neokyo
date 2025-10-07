@@ -59,11 +59,11 @@ def save_product_files(item, url, currency, config):
             if not csv_exists:
                 writer.writeheader()
             writer.writerow({**item, "url": url})
-        print(Fore.GREEN + f"appended product to: {csv_path}")
+        print(Fore.GREEN + f"appended product to: {csv_path}\n")
 
         try:
-            export_clean_excel(csv_path, "formatted_output.xlsx")
-            print(Fore.CYAN + "created clean excel export: formatted_output.xlsx")
+            export_clean_excel(csv_path, "neokyo.xlsx")
+            print(Fore.CYAN + "excel created: neokyo.xlsx")
         except Exception as e:
             print(Fore.YELLOW + f"could not create clean excel file: {e}")
 

@@ -39,4 +39,3 @@ def export_clean_excel(csv_file, output_file="neokyo.xlsx"):
         ws.row_dimensions[row[0].row].height = 25
 
     wb.save(output_file)
-    print(f"✅ excel saved as: {output_file}")

@@ -58,7 +58,7 @@ def main():
                     with open(config["debug"]["log_file"], "a", encoding="utf-8") as log:
                         log.write(f"[error] {url} — {e}\n")
 
-        print(Fore.CYAN + "\n✅ finished processing..\n")
+        print(Fore.GREEN + "\nfinished processing..\n")
 
 if __name__ == "__main__":
     main()
