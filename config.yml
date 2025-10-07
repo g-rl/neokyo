@@ -1,0 +1,60 @@
+# neokyo config
+
+default_currency: gbp
+default_language: en               # language for translation (set 'none' to disable)
+fallback_language: ja              # fallback if translation fails
+retry_attempts: 3                  # how many times to retry a request if it fails
+timeout_seconds: 10                # HTTP timeout for requests
+
+output:
+  open_folder: true
+  save_images: true
+  save_csv: true
+  save_txt: true                   # save item_data.txt file
+  print_data: true
+  print_summary: true              # print summary after all downloads
+  folder_name_style: "translated"  # "original", "translated", or "item_id"
+  overwrite_existing: false        # overwrite if folder already exists?
+
+conversion:
+  precision: 2
+  symbol_spacing: false
+  show_both_prices: true           # show both yen and converted price
+  custom_rates:                    # custom user-defined rates (optional)
+    hkd: 0.051
+    inr: 0.56
+
+scraping:
+  translate_title: true
+  include_image_url: true
+  include_seller: true
+  include_condition: true
+  include_shipping: true
+  use_fallback_selectors: false     # try extra selectors if standard ones fail
+
+display:
+  padding: 20
+  theme: "neon"                    # "light", "dark", "neon"
+  show_headers: true
+  title_uppercase: true
+  truncate_long_titles: true
+  max_title_length: 70
+  separator_line: true
+
+files:
+  base_dir: "products"
+  csv_name: "data.csv"
+  image_prefix: "img_"
+  image_format: "jpg"              # jpg, png, etc.
+  naming_convention: "safe"        # "safe" or "raw"
+
+network:
+  user_agent: "Mozilla/5.0 (Neokyo-Scraper)"
+  proxy: null
+  delay_between_requests: 1.5      # seconds between requests
+
+debug:
+  log_errors: true
+  log_file: "error.log"
+  show_stack_traces: false
+  verbose_mode: false
