@@ -2,6 +2,7 @@ easily convert currencies and save information about clothing items
 
 how to use (install python if you dont have it):
 open this folder in a command prompt and type
+- "pip install requests beautifulsoup4 colorama deep-translator"
 - "python3.11 neokyo.py"
 
 you can enter a link just like "https://neokyo.com/en/product/mercari/m14120779981" to get the information
