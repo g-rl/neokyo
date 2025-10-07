@@ -1,10 +1,12 @@
 import os
+import csv
 import requests
 import subprocess
 import platform
 from bs4 import BeautifulSoup
 from colorama import Fore, Style, init
 from urllib.parse import urlparse
+from deep_translator import GoogleTranslator
 
 init(autoreset=True)
 
@@ -32,6 +34,13 @@ def fetch_page_html(url):
     response.raise_for_status()
     return response.text
 
+def translate_to_english(text):
+    try:
+        return GoogleTranslator(source='auto', target='en').translate(text)
+    except Exception as e:
+        print(Fore.YELLOW + f"[translation warning] could not translate title: {e}")
+        return text 
+
 def scrape_product_data(url):
     html = fetch_page_html(url)
     soup = BeautifulSoup(html, "html.parser")
@@ -45,7 +54,12 @@ def scrape_product_data(url):
         title_tag = product_section.find("h6") or product_section.find("p")
     if not title_tag:
         title_tag = soup.find("h6", string=True)
-    item_data["title"] = title_tag.get_text(strip=True).lower() if title_tag else "n/a"
+    
+    raw_title = title_tag.get_text(strip=True) if title_tag else "n/a"
+    translated_title = translate_to_english(raw_title) if raw_title != "n/a" else "n/a"
+
+    item_data["title_original"] = raw_title
+    item_data["title"] = translated_title.lower()
 
     item_data["seller"] = soup.find(string="Seller").find_next().get_text(strip=True).lower() if soup.find(string="Seller") else "n/a"
     item_data["item_id"] = soup.find(string="Item ID").find_next().get_text(strip=True).lower() if soup.find(string="Item ID") else "n/a"
@@ -71,6 +85,7 @@ def scrape_product_data(url):
 def display_data(item_data, currency=None):
     padding = 20
     print(f"{Fore.WHITE}{' ' * padding}{Fore.MAGENTA}{item_data['title']}{Fore.WHITE}{' ' * padding}\n")
+    print(f"{Fore.WHITE}original title: {Fore.MAGENTA}{Style.BRIGHT}{item_data['title_original']}")
     print(f"{Fore.WHITE}seller: {Fore.MAGENTA}{Style.BRIGHT}{item_data['seller']}")
     print(f"{Fore.WHITE}item id: {Fore.MAGENTA}{Style.BRIGHT}{item_data['item_id']}")
     print(f"{Fore.WHITE}condition: {Fore.MAGENTA}{Style.BRIGHT}{item_data['condition']}")
@@ -90,10 +105,7 @@ def display_data(item_data, currency=None):
         print(f"{Fore.WHITE}image url: {Fore.MAGENTA}{Style.BRIGHT}{item_data['image_url']}")
     print(Fore.CYAN + "\n")
 
-import subprocess
-import platform
-
-def save_product_files(item_data, url):
+def save_product_files(item_data, url, currency=None):
     safe_title = "".join(c for c in item_data['title'] if c.isalnum() or c in (' ', '_')).strip().replace(" ", "_")
     folder_name = os.path.join("products", safe_title or "product")
     
@@ -103,15 +115,25 @@ def save_product_files(item_data, url):
 
     os.makedirs(folder_name, exist_ok=True)
 
+    price_yen = item_data.get("price_yen", 0)
+    converted_price = None
+    converted_symbol = ""
+
+    if currency and currency in CURRENCY_RATES:
+        converted_price = round(price_yen * CURRENCY_RATES[currency])
+        converted_symbol = CURRENCY_SYMBOLS.get(currency, "")
+
     data_path = os.path.join(folder_name, "item_data.txt")
     with open(data_path, "w", encoding="utf-8") as file:
-        file.write(f"title: {item_data.get('title', 'n/a')}\n")
+        file.write(f"translated title: {item_data.get('title', 'n/a')}\n")
+        file.write(f"original title: {item_data.get('title_original', 'n/a')}\n")
         file.write(f"seller: {item_data.get('seller', 'n/a')}\n")
         file.write(f"item id: {item_data.get('item_id', 'n/a')}\n")
         file.write(f"condition: {item_data.get('condition', 'n/a')}\n")
         file.write(f"shipping: {item_data.get('shipping', 'n/a')}\n")
-        price_yen = item_data.get("price_yen", 0)
         file.write(f"price: {price_yen}¥\n")
+        if converted_price is not None:
+            file.write(f"converted price: {converted_symbol}{converted_price}\n")
         if item_data.get("image_url"):
             file.write(f"image url: {item_data['image_url']}\n")
         file.write(f"url: {url}\n")
@@ -129,6 +151,36 @@ def save_product_files(item_data, url):
         except Exception as e:
             print(Fore.RED + f"failed to save image: {e}")
 
+    # csv stuff
+    csv_path = os.path.join("products", "data.csv")
+    csv_exists = os.path.exists(csv_path)
+
+    with open(csv_path, mode="a", newline="", encoding="utf-8") as csvfile:
+        fieldnames = [
+            "translated_title", "original_title", "seller", "item_id", "condition",
+            "shipping", "price_yen", "converted_price", "converted_currency",
+            "image_url", "url"
+        ]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        if not csv_exists:
+            writer.writeheader()
+
+        writer.writerow({
+            "translated_title": item_data.get("title", "n/a"),
+            "original_title": item_data.get("title_original", "n/a"),
+            "seller": item_data.get("seller", "n/a"),
+            "item_id": item_data.get("item_id", "n/a"),
+            "condition": item_data.get("condition", "n/a"),
+            "shipping": item_data.get("shipping", "n/a"),
+            "price_yen": price_yen,
+            "converted_price": converted_price if converted_price is not None else "",
+            "converted_currency": currency if converted_price is not None else "",
+            "image_url": item_data.get("image_url", ""),
+            "url": url
+        })
+    print(Fore.GREEN + f"appended product to: {csv_path}")
+
     try:
         if platform.system() == "Windows":
             os.startfile(folder_name)
@@ -138,8 +190,6 @@ def save_product_files(item_data, url):
             subprocess.run(["xdg-open", folder_name])
     except Exception as e:
         print(Fore.YELLOW + f"could not open folder automatically: {e}")
-
-
 
 def main():
     print(Fore.MAGENTA + Style.BRIGHT + "\nneokyo product checker - github.com/g-rl\n")
@@ -163,7 +213,7 @@ def main():
             display_data(item_data, currency)
 
             if item_data["price_yen"] > 0:
-                save_product_files(item_data, url)
+                save_product_files(item_data, url, currency)
             else:
                 print(Fore.YELLOW + "no price found. skipping file save.")
 
