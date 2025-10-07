@@ -13,10 +13,6 @@ from deep_translator import GoogleTranslator
 
 init(autoreset=True)
 
-# ===============================================
-# --- Constants & Default Config ---
-# ===============================================
-
 CONFIG_PATH = "config.yml"
 
 DEFAULT_CONFIG = {
@@ -96,10 +92,6 @@ CURRENCY_SYMBOLS = {
     "chf": "CHF"
 }
 
-# ===============================================
-# --- Config Loader ---
-# ===============================================
-
 def load_config():
     if os.path.exists(CONFIG_PATH):
         try:
@@ -119,11 +111,6 @@ def merge_dicts(base, custom):
         else:
             merged[k] = v
     return merged
-
-
-# ===============================================
-# --- Network / Scraping Helpers ---
-# ===============================================
 
 def fetch_page_html(url, config):
     headers = {"User-Agent": config["network"]["user_agent"]}
@@ -196,11 +183,6 @@ def scrape_product_data(url, config):
 
     return item
 
-
-# ===============================================
-# --- Display ---
-# ===============================================
-
 def display_data(item, currency, config):
     padding = config["display"]["padding"]
     title = item['title']
@@ -232,11 +214,6 @@ def display_data(item, currency, config):
         else:
             print(f"{Fore.WHITE}price: {Fore.MAGENTA}{sym}{space}{converted}")
     print()
-
-
-# ===============================================
-# --- Saving Files ---
-# ===============================================
 
 def safe_name(name):
     return "".join(c for c in name if c.isalnum() or c in (" ", "_")).strip().replace(" ", "_")
@@ -305,11 +282,6 @@ def save_product_files(item, url, currency, config):
                 subprocess.run(["xdg-open", folder_path])
         except Exception as e:
             print(Fore.YELLOW + f"could not open folder automatically: {e}")
-
-
-# ===============================================
-# --- Main ---
-# ===============================================
 
 def main():
     print(Fore.MAGENTA + Style.BRIGHT + "\nneokyo product checker - github.com/g-rl\n")
