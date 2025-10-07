@@ -1,0 +1,10 @@
+# Core HTTP and parsing
+requests>=2.31.0
+beautifulsoup4>=4.12.3
+
+deep-translator>=1.11.4
+PyYAML>=6.0.1
+colorama>=0.4.6
+openpyxl>=3.1.2
+pypandoc>=1.13
+pandas>=2.2.2
